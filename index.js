@@ -27,9 +27,9 @@ var verbose = false;
 
 //making attracted to food and repeled from other snakes head
 
-var foodScalar = 1800.0;
-var headScalar = -4200.0;
-var bodyScalar = -25.0;
+var foodScalar = 1950.0;
+var headScalar = -4600.0;
+var bodyScalar = -55.0;
 var cornerScalar = -250.0;
 var cornerXs = [0, 0, maxX,maxX];
 var cornerYs = [0, maxY, 0,maxY];
@@ -151,7 +151,7 @@ function getWeightings(x, y, s, f, w){
       //log(s[j].id+", "+me.id);
       for (var k = 2; k < s[j].body.length;k++){
         var distance = getManhattenDistance(xs[i], ys[i], s[j].body[k].x , s[j].body[k].y );
-        w[i]+= Math.max(bodyScalar/(distance*distance), weightLimits[1]);
+        w[i]+= Math.max(bodyScalar/(distance*distance), weightLimits[1])/s.length;
       }
 
 
@@ -161,7 +161,7 @@ function getWeightings(x, y, s, f, w){
         var d2 = distance * distance;
         var weight = Math.max(headScalar/d2, 2*weightLimits[1]);
       //  log("head weight: "+weight);
-        w[i] += weight;
+        w[i] += weight/s.length;
       }
     }
 
@@ -172,7 +172,7 @@ function getWeightings(x, y, s, f, w){
       var d2 = distance * distance;
       var weight = Math.min(foodScalar/d2, weightLimits[2]);
       //log("food weight: "+weight);
-      w[i] += weight;
+      w[i] += weight/f.length;
     }
 
     for(var j = 0; j < cornerXs.length; j++) {
