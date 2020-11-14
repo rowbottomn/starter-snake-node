@@ -17,10 +17,23 @@ var me = {};
 var board = {};
 var maxX = -1;
 var maxY = -1;
+
 var snakes = [];
+var food = [];
+
 var head = {};
 var heading = 0;
 var verbose = true;
+
+//making attracted to food and repeled from other snakes head
+
+var foodScalar = 2000.0;
+var headScalar = -3500.0;
+var bodyScalar = -25.0;
+var cornerScalar = -250.0;
+var cornerXs = [0, 0, maxX,maxX];
+var cornerYs = [0, maxY, 0,maxY];
+var weightLimits = [-999999, -10000, 3000, -25000];
 
 function handleIndex(request, response) {
   var battlesnakeInfo = {
@@ -110,52 +123,104 @@ function isMoveSafe(x,y, snakes){
   for (var i = 0; i < snakes.length; i++){
     var body = snakes[i].body;
     for (var j = 0; j < body.length; j++){
-      bX = body[j].x;
-      bY = body[j].y;
-
-    //watch out for the head
-      if (j === 0 && snakes[i].id != me.id){
-        for (var xx = -1; xx < 2; xx++){
-          for (var yy = -1; yy < 2; yy++){
-            if (x === bX + xx && y === bY + yy ){
-              console.log("++++++++++++++avoiding head!"+x+","+ y+","+bX+","+bY+","+xx+"," + yy+","+ i +", "+ snakes[i].name)
-              return false;    
-            }
-          }
-        }
+      if (x === body[j].x && y === body[j].y){
+        return false;
       }
-      else {
-        if (x === bX && y === bY){
-          return false;
-        }
-      } 
     }
-
   }
 
   return true;
 }
 
+function getManhattenDistance(x1, y1, x2, y2){
+  return Math.abs(x1-x2)+Math.abs(y1-y2);
+}
+
+function log(msg){
+  if (verbose){
+    console.log(msg);
+  }
+}
+
+function getWeightings(x, y, s, f, w){
+  var xs = [x, x+1, x, x-1];
+  var ys = [y+1, y, y-1, y];
+  
+  for (var i = 0; i < xs.length; i++){
+    if(!isMoveSafe(xs[i], ys[i], s)) {
+      w[i] += weightLimits[0];
+    }
+      //go thru the snake heads
+    for(var j = 0; j < s.length; j++ ) {
+      //don't get self repelled
+      //log(s[j].id+", "+me.id);
+      for (var k = 1; k < s[j].body.length;k++){
+        var distance = getManhattenDistance(xs[i], ys[i], s[j].body[k].x , s[j].body[k].y );
+        w[i]+= Math.max(bodyScalar/(distance*distance), weightLimits[1]);
+      }
+
+
+
+      if (s[j].id!=me.id){
+        var distance = getManhattenDistance(xs[i], ys[i], s[j].head.x , s[j].head.y );
+        var d2 = distance * distance;
+        var weight = Math.max(headScalar/d2, 2*weightLimits[1]);
+      //  log("head weight: "+weight);
+        w[i] += weight;
+      }
+    }
+
+      //go thru the food
+    for(var j = 0; j < f.length; j++ ) {
+      var distance = getManhattenDistance(xs[i], ys[i], f[j].x , f[j].y );
+     // log ("food dist" + distance);
+      var d2 = distance * distance;
+      var weight = Math.min(foodScalar/d2, weightLimits[2]);
+      //log("food weight: "+weight);
+      w[i] += weight;
+    }
+
+    for(var j = 0; j < cornerXs.length; j++) {
+      var distance = getManhattenDistance(xs[i], ys[i], cornerXs[j] , cornerYs[j] );
+      w[i]+= Math.max(cornerScalar/(distance*distance), weightLimits[3]);
+    }
+    console.log("weightings"+i+": "+w[i]);
+  }
+  return w;
+}
+
 function handleMove(request, response) {
   var gameData = request.body
   var possibleMoves = ['up', 'right', 'down', 'left'];
+  var weightings = [0,0,0,0];//up right down left
   me = gameData.you;
   head = me.head;
   body = me.body;
   board = gameData.board;
   snakes = board.snakes;
+  food = board.food;
   x = head.x;
   y = head.y;
   heading = getHeading(x, y, body[1].x, body[1].y);
   console.log("heading is "+ possibleMoves[heading]);
 
-
+  weightings = getWeightings(x, y, snakes, food, weightings);
+  var best = heading;
+  var bestWeighting = weightings[heading];
+  for (var i = 0; i < weightings.length; i++){
+    if (weightings[i] > bestWeighting){
+      best = i;
+      bestWeighting = weightings[i];
+    }
+  }
     
   //var move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
   //look ahead to see what might happen
  // var newX = x;
  // var newY = y;
   //var randomChance  = Math.floor(Math.random() * 100);
+
+  /*
   if (me.health< 20){
     
     heading =Math.floor(Math.random() * possibleMoves.length);
@@ -254,7 +319,7 @@ function handleMove(request, response) {
   }
   */
 
-  var move = possibleMoves[heading];
+  var move = possibleMoves[best];
   console.log('MOVE: ' + move)
   response.status(200).send({
     move: move
