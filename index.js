@@ -27,13 +27,13 @@ var verbose = true;
 
 //making attracted to food and repeled from other snakes head
 
-var foodScalar = 10.0;
+var foodScalar = 15.0;
 var headScalar = -3800.0;
-var bodyScalar = -65.0;
-var cornerScalar = -950.0;
+var bodyScalar = -465.0;
+var cornerScalar = -1950.0;
 var cornerXs = [0, 0, maxX,maxX];
 var cornerYs = [0, maxY, 0,maxY];
-var weightLimits = [-999999, -12000, 100, -18500];
+var weightLimits = [-999999, -18000, 500, -18500];//death, body, food, corner
 
 function handleIndex(request, response) {
   var battlesnakeInfo = {
@@ -142,28 +142,30 @@ function log(msg){
 function getWeightings(x, y, s, f, w){
   var xs = [x, x+1, x, x-1];
   var ys = [y+1, y, y-1, y];
-  
+  var hunger = (me.health - 35)*-0.05;
+  var segments = 0;
   for (var i = 0; i < xs.length; i++){
+    
     if(!isMoveSafe(xs[i], ys[i], s)) {
       w[i] += weightLimits[0];
     }
       //go thru the snake heads
     for(var j = 0; j < s.length; j++ ) {
+      segments = 0;
       //don't get self repelled
       //log(s[j].id+", "+me.id);
       for (var k = 2; k < s[j].body.length;k++){
         var distance = getManhattenDistance(xs[i], ys[i], s[j].body[k].x , s[j].body[k].y );
         w[i]+= Math.max(bodyScalar/(distance*distance), weightLimits[1]);
+        segments++;        
       }
-
-
 
       if (s[j].id!=me.id){
         var distance = getManhattenDistance(xs[i], ys[i], s[j].head.x , s[j].head.y );
         var d2 = distance * distance;
         var weight = Math.max(headScalar/d2, 2*weightLimits[1]);
       //  log("head weight: "+weight);
-        w[i] += weight;
+        w[i] += weight/segments;
       }
     }
 
@@ -172,7 +174,14 @@ function getWeightings(x, y, s, f, w){
       var distance = getManhattenDistance(xs[i], ys[i], f[j].x , f[j].y );
      // log ("food dist" + distance);
       var d2 = distance * distance;
-      var weight = Math.min(foodScalar/d2, weightLimits[2]);
+      var weight = 0;
+      if (hunger >0 ){
+        weight = Math.min(foodScalar*hunger/d2, hunger*weightLimits[2]);
+      }
+      else {
+        weight = Math.max(foodScalar*hunger/d2, hunger*weightLimits[2]);
+      }
+      
       //log("food weight: "+weight);
       w[i] += weight/f.length;
     }
@@ -181,6 +190,7 @@ function getWeightings(x, y, s, f, w){
       var distance = getManhattenDistance(xs[i], ys[i], cornerXs[j] , cornerYs[j] );
       w[i]+= Math.max(cornerScalar/(distance*distance), weightLimits[3])/4;
     }
+    
     log("weightings"+i+": "+w[i]);
   }
   return w;
