@@ -27,13 +27,13 @@ var verbose = true;
 
 //making attracted to food and repeled from other snakes head
 
-var foodScalar = -100.0;
+var foodScalar = 10.0;
 var headScalar = -3800.0;
 var bodyScalar = -65.0;
 var cornerScalar = -950.0;
 var cornerXs = [0, 0, maxX,maxX];
 var cornerYs = [0, maxY, 0,maxY];
-var weightLimits = [-999999, -12000, 2700, -18500];
+var weightLimits = [-999999, -12000, 100, -18500];
 
 function handleIndex(request, response) {
   var battlesnakeInfo = {
@@ -172,7 +172,7 @@ function getWeightings(x, y, s, f, w){
       var distance = getManhattenDistance(xs[i], ys[i], f[j].x , f[j].y );
      // log ("food dist" + distance);
       var d2 = distance * distance;
-      var weight = Math.max(foodScalar/d2, weightLimits[2]);
+      var weight = Math.min(foodScalar/d2, weightLimits[2]);
       //log("food weight: "+weight);
       w[i] += weight/f.length;
     }
