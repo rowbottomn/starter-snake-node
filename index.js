@@ -27,13 +27,13 @@ var verbose = true;
 
 //making attracted to food and repeled from other snakes head
 
-var foodScalar = 15.0;
+var foodScalar = 11.0;
 var headScalar = -3800.0;
-var bodyScalar = -465.0;
-var cornerScalar = -1950.0;
+var bodyScalar = -485.0;
+var cornerScalar = -18950.0;
 var cornerXs = [0, 0, maxX,maxX];
 var cornerYs = [0, maxY, 0,maxY];
-var weightLimits = [-999999, -18000, 500, -18500];//death, body, food, corner
+var weightLimits = [-999999, -18000, 500, -59500];//death, body, food, corner
 
 function handleIndex(request, response) {
   var battlesnakeInfo = {
@@ -142,7 +142,7 @@ function log(msg){
 function getWeightings(x, y, s, f, w){
   var xs = [x, x+1, x, x-1];
   var ys = [y+1, y, y-1, y];
-  var hunger = (me.health - 35)*-0.05;
+  var hunger = (me.health - 22)*-0.04;
   var segments = 0;
   for (var i = 0; i < xs.length; i++){
     
@@ -151,13 +151,13 @@ function getWeightings(x, y, s, f, w){
     }
       //go thru the snake heads
     for(var j = 0; j < s.length; j++ ) {
-      segments = 0;
+      
       //don't get self repelled
       //log(s[j].id+", "+me.id);
-      for (var k = 2; k < s[j].body.length;k++){
+      for (var k = 2; k < s[j].body.length-1;k++){
         var distance = getManhattenDistance(xs[i], ys[i], s[j].body[k].x , s[j].body[k].y );
-        w[i]+= Math.max(bodyScalar/(distance*distance), weightLimits[1]);
-        segments++;        
+        w[i]+= Math.max(bodyScalar/(distance*distance), weightLimits[1])/s[j].body.length;
+       
       }
 
       if (s[j].id!=me.id){
@@ -165,7 +165,7 @@ function getWeightings(x, y, s, f, w){
         var d2 = distance * distance;
         var weight = Math.max(headScalar/d2, 2*weightLimits[1]);
       //  log("head weight: "+weight);
-        w[i] += weight/segments;
+        w[i] += weight;
       }
     }
 
